@@ -13,7 +13,7 @@ AR=		ar r
 CFLAGS= $(INCLUDES) $(CFLAG)
 
 GENERAL=Makefile
-TEST=evp_test.c
+TEST=evp_test.c evp_extra_test.c
 TESTDATA=evptests.txt
 APPS=
 
@@ -85,6 +85,8 @@ tests:
 
 lint:
 	lint -DLINT $(INCLUDES) $(SRC)>fluff
+
+update: depend
 
 depend:
 	@[ -n "$(MAKEDEPEND)" ] # should be set by upper Makefile...
@@ -197,8 +199,8 @@ e_aes.o: ../../include/openssl/opensslv.h ../../include/openssl/ossl_typ.h
 e_aes.o: ../../include/openssl/rand.h ../../include/openssl/safestack.h
 e_aes.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 e_aes.o: ../modes/modes_lcl.h e_aes.c evp_locl.h
-e_aes_cbc_hmac_sha1.o: ../../include/openssl/aes.h ../../include/openssl/asn1.h
-e_aes_cbc_hmac_sha1.o: ../../include/openssl/bio.h
+e_aes_cbc_hmac_sha1.o: ../../e_os.h ../../include/openssl/aes.h
+e_aes_cbc_hmac_sha1.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/crypto.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/e_os2.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/evp.h
@@ -212,9 +214,9 @@ e_aes_cbc_hmac_sha1.o: ../../include/openssl/rand.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/safestack.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/sha.h
 e_aes_cbc_hmac_sha1.o: ../../include/openssl/stack.h
-e_aes_cbc_hmac_sha1.o: ../../include/openssl/symhacks.h ../modes/modes_lcl.h
-e_aes_cbc_hmac_sha1.o: e_aes_cbc_hmac_sha1.c
-e_aes_cbc_hmac_sha256.o: ../../include/openssl/aes.h
+e_aes_cbc_hmac_sha1.o: ../../include/openssl/symhacks.h ../constant_time_locl.h
+e_aes_cbc_hmac_sha1.o: ../modes/modes_lcl.h e_aes_cbc_hmac_sha1.c
+e_aes_cbc_hmac_sha256.o: ../../e_os.h ../../include/openssl/aes.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/asn1.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/bio.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/crypto.h
@@ -230,7 +232,8 @@ e_aes_cbc_hmac_sha256.o: ../../include/openssl/rand.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/safestack.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/sha.h
 e_aes_cbc_hmac_sha256.o: ../../include/openssl/stack.h
-e_aes_cbc_hmac_sha256.o: ../../include/openssl/symhacks.h ../modes/modes_lcl.h
+e_aes_cbc_hmac_sha256.o: ../../include/openssl/symhacks.h
+e_aes_cbc_hmac_sha256.o: ../constant_time_locl.h ../modes/modes_lcl.h
 e_aes_cbc_hmac_sha256.o: e_aes_cbc_hmac_sha256.c
 e_bf.o: ../../e_os.h ../../include/openssl/asn1.h ../../include/openssl/bio.h
 e_bf.o: ../../include/openssl/blowfish.h ../../include/openssl/buffer.h
@@ -302,7 +305,6 @@ e_null.o: ../../include/openssl/opensslconf.h ../../include/openssl/opensslv.h
 e_null.o: ../../include/openssl/ossl_typ.h ../../include/openssl/safestack.h
 e_null.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 e_null.o: ../cryptlib.h e_null.c
-e_old.o: e_old.c
 e_rc2.o: ../../e_os.h ../../include/openssl/asn1.h ../../include/openssl/bio.h
 e_rc2.o: ../../include/openssl/buffer.h ../../include/openssl/crypto.h
 e_rc2.o: ../../include/openssl/e_os2.h ../../include/openssl/err.h
@@ -406,7 +408,7 @@ evp_enc.o: ../../include/openssl/pkcs7.h ../../include/openssl/rand.h
 evp_enc.o: ../../include/openssl/safestack.h ../../include/openssl/sha.h
 evp_enc.o: ../../include/openssl/stack.h ../../include/openssl/symhacks.h
 evp_enc.o: ../../include/openssl/x509.h ../../include/openssl/x509_vfy.h
-evp_enc.o: ../constant_time_locl.h ../cryptlib.h evp_enc.c evp_locl.h
+evp_enc.o: ../cryptlib.h evp_enc.c evp_locl.h
 evp_err.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
 evp_err.o: ../../include/openssl/crypto.h ../../include/openssl/e_os2.h
 evp_err.o: ../../include/openssl/err.h ../../include/openssl/evp.h

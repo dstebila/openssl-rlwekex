@@ -27,7 +27,7 @@
 # referred below, which improves ECDH and ECDSA verify benchmarks
 # by 18-40%.
 #
-# Câmara, D.; Gouvêa, C. P. L.; López, J. & Dahab, R.: Fast Software
+# CÃ¢mara, D.; GouvÃªa, C. P. L.; LÃ³pez, J. & Dahab, R.: Fast Software
 # Polynomial Multiplication on ARM Processors using the NEON Engine.
 # 
 # http://conradoplg.cryptoland.net/files/2010/12/mocrysen13.pdf
@@ -40,10 +40,6 @@ $code=<<___;
 
 .text
 .code	32
-
-#if __ARM_ARCH__>=7
-.fpu	neon
-#endif
 ___
 ################
 # private interface to mul_1x1_ialu
@@ -140,22 +136,82 @@ ___
 ################
 # void	bn_GF2m_mul_2x2(BN_ULONG *r,
 #	BN_ULONG a1,BN_ULONG a0,
-#	BN_ULONG b1,BN_ULONG b0);	# r[3..0]=a1a0·b1b0
+#	BN_ULONG b1,BN_ULONG b0);	# r[3..0]=a1a0Â·b1b0
 {
-my ($r,$t0,$t1,$t2,$t3)=map("q$_",(0..3,8..12));
-my ($a,$b,$k48,$k32,$k16)=map("d$_",(26..31));
-
 $code.=<<___;
 .global	bn_GF2m_mul_2x2
 .type	bn_GF2m_mul_2x2,%function
 .align	5
 bn_GF2m_mul_2x2:
-#if __ARM_ARCH__>=7
+#if __ARM_MAX_ARCH__>=7
 	ldr	r12,.LOPENSSL_armcap
 .Lpic:	ldr	r12,[pc,r12]
 	tst	r12,#1
-	beq	.Lialu
+	bne	.LNEON
+#endif
+___
+$ret="r10";	# reassigned 1st argument
+$code.=<<___;
+	stmdb	sp!,{r4-r10,lr}
+	mov	$ret,r0			@ reassign 1st argument
+	mov	$b,r3			@ $b=b1
+	ldr	r3,[sp,#32]		@ load b0
+	mov	$mask,#7<<2
+	sub	sp,sp,#32		@ allocate tab[8]
 
+	bl	mul_1x1_ialu		@ a1Â·b1
+	str	$lo,[$ret,#8]
+	str	$hi,[$ret,#12]
+
+	eor	$b,$b,r3		@ flip b0 and b1
+	 eor	$a,$a,r2		@ flip a0 and a1
+	eor	r3,r3,$b
+	 eor	r2,r2,$a
+	eor	$b,$b,r3
+	 eor	$a,$a,r2
+	bl	mul_1x1_ialu		@ a0Â·b0
+	str	$lo,[$ret]
+	str	$hi,[$ret,#4]
+
+	eor	$a,$a,r2
+	eor	$b,$b,r3
+	bl	mul_1x1_ialu		@ (a1+a0)Â·(b1+b0)
+___
+@r=map("r$_",(6..9));
+$code.=<<___;
+	ldmia	$ret,{@r[0]-@r[3]}
+	eor	$lo,$lo,$hi
+	eor	$hi,$hi,@r[1]
+	eor	$lo,$lo,@r[0]
+	eor	$hi,$hi,@r[2]
+	eor	$lo,$lo,@r[3]
+	eor	$hi,$hi,@r[3]
+	str	$hi,[$ret,#8]
+	eor	$lo,$lo,$hi
+	add	sp,sp,#32		@ destroy tab[8]
+	str	$lo,[$ret,#4]
+
+#if __ARM_ARCH__>=5
+	ldmia	sp!,{r4-r10,pc}
+#else
+	ldmia	sp!,{r4-r10,lr}
+	tst	lr,#1
+	moveq	pc,lr			@ be binary compatible with V4, yet
+	bx	lr			@ interoperable with Thumb ISA:-)
+#endif
+___
+}
+{
+my ($r,$t0,$t1,$t2,$t3)=map("q$_",(0..3,8..12));
+my ($a,$b,$k48,$k32,$k16)=map("d$_",(26..31));
+
+$code.=<<___;
+#if __ARM_MAX_ARCH__>=7
+.arch	armv7-a
+.fpu	neon
+
+.align	5
+.LNEON:
 	ldr		r12, [sp]		@ 5th argument
 	vmov.32		$a, r2, r1
 	vmov.32		$b, r12, r3
@@ -203,62 +259,12 @@ bn_GF2m_mul_2x2:
 
 	vst1.32		{$r}, [r0]
 	ret		@ bx lr
-.align	4
-.Lialu:
 #endif
 ___
 }
-$ret="r10";	# reassigned 1st argument
 $code.=<<___;
-	stmdb	sp!,{r4-r10,lr}
-	mov	$ret,r0			@ reassign 1st argument
-	mov	$b,r3			@ $b=b1
-	ldr	r3,[sp,#32]		@ load b0
-	mov	$mask,#7<<2
-	sub	sp,sp,#32		@ allocate tab[8]
-
-	bl	mul_1x1_ialu		@ a1·b1
-	str	$lo,[$ret,#8]
-	str	$hi,[$ret,#12]
-
-	eor	$b,$b,r3		@ flip b0 and b1
-	 eor	$a,$a,r2		@ flip a0 and a1
-	eor	r3,r3,$b
-	 eor	r2,r2,$a
-	eor	$b,$b,r3
-	 eor	$a,$a,r2
-	bl	mul_1x1_ialu		@ a0·b0
-	str	$lo,[$ret]
-	str	$hi,[$ret,#4]
-
-	eor	$a,$a,r2
-	eor	$b,$b,r3
-	bl	mul_1x1_ialu		@ (a1+a0)·(b1+b0)
-___
-@r=map("r$_",(6..9));
-$code.=<<___;
-	ldmia	$ret,{@r[0]-@r[3]}
-	eor	$lo,$lo,$hi
-	eor	$hi,$hi,@r[1]
-	eor	$lo,$lo,@r[0]
-	eor	$hi,$hi,@r[2]
-	eor	$lo,$lo,@r[3]
-	eor	$hi,$hi,@r[3]
-	str	$hi,[$ret,#8]
-	eor	$lo,$lo,$hi
-	add	sp,sp,#32		@ destroy tab[8]
-	str	$lo,[$ret,#4]
-
-#if __ARM_ARCH__>=5
-	ldmia	sp!,{r4-r10,pc}
-#else
-	ldmia	sp!,{r4-r10,lr}
-	tst	lr,#1
-	moveq	pc,lr			@ be binary compatible with V4, yet
-	bx	lr			@ interoperable with Thumb ISA:-)
-#endif
 .size	bn_GF2m_mul_2x2,.-bn_GF2m_mul_2x2
-#if __ARM_ARCH__>=7
+#if __ARM_MAX_ARCH__>=7
 .align	5
 .LOPENSSL_armcap:
 .word	OPENSSL_armcap_P-(.Lpic+8)
@@ -266,7 +272,9 @@ $code.=<<___;
 .asciz	"GF(2^m) Multiplication for ARMv4/NEON, CRYPTOGAMS by <appro\@openssl.org>"
 .align	5
 
+#if __ARM_MAX_ARCH__>=7
 .comm	OPENSSL_armcap_P,4,4
+#endif
 ___
 
 foreach (split("\n",$code)) {

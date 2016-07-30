@@ -1,0 +1,31 @@
+This branch contains an RLWE patch to enable RLWE. Note that it's still using RSA for server authentication
+
+## Installation on Mac
+So far this is only tested on mac
+
+1. Configure the project
+`./Configure darwin64-x86_64-cc zlib no-asm no-krb5 shared [--prefix=<install_dir>] -DOPENSSL_HYBRID_RLWE_ECDHE`
+
+eg.
+`./Configure darwin64-x86_64-cc zlib no-asm no-krb5 shared --prefix=/Users/bender/dev/usr/local -DOPENSSL_HYBRID_RLWE_ECDHE`
+
+2. `make depend`
+3. `make install`
+
+## Running Tests
+1. Run the installation steps
+2. `make test`
+
+## Running example s_server/s_client connection
+### Generate keys
+1. Create a new directory to store your keys
+2. `openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem`
+3. `openssl dhparam -out dhparams.pem 2048`
+
+### Starting the example server
+1. Export the installation path: `export PATH=/Users/bender/dev/usr/local/bin:$PATH`
+2. `openssl s_server -cert cert.pem -key key.pem -status_verbose -dhparam dhparams.pem`. Server should now be waiting for connections.
+
+### Starting the client
+1. In another terminal: Export the installation path: `export PATH=/Users/bender/dev/usr/local/bin:$PATH`
+2. `openssl s_client -cipher RLWE-RSA-AES256-GCM-SHA256`

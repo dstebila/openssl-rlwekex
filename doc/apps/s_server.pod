@@ -33,6 +33,7 @@ B<openssl> B<s_server>
 [B<-state>]
 [B<-CApath directory>]
 [B<-CAfile filename>]
+[B<-no_alt_chains>]
 [B<-nocert>]
 [B<-cipher cipherlist>]
 [B<-serverpref>]
@@ -174,6 +175,10 @@ and to use when attempting to build the server certificate chain. The list
 is also used in the list of acceptable client CAs passed to the client when
 a certificate is requested.
 
+=item B<-no_alt_chains>
+
+See the L<B<verify>|verify(1)> manual page for details.
+
 =item B<-state>
 
 prints out the SSL session states.
@@ -212,11 +217,11 @@ Use the PSK key B<key> when using a PSK cipher suite. The key is
 given as a hexadecimal number without leading 0x, for example -psk
 1a2b3c4d.
 
-=item B<-ssl2>, B<-ssl3>, B<-tls1>, B<-no_ssl2>, B<-no_ssl3>, B<-no_tls1>
+=item B<-ssl2>, B<-ssl3>, B<-tls1>, B<-tls1_1>, B<-tls1_2>, B<-no_ssl2>, B<-no_ssl3>, B<-no_tls1>, B<-no_tls1_1>, B<-no_tls1_2>
 
-these options disable the use of certain SSL or TLS protocols. By default
-the initial handshake uses a method which should be compatible with all
-servers and permit them to use SSL v3, SSL v2 or TLS as appropriate.
+These options require or disable the use of the specified SSL or TLS protocols.
+By default the initial handshake uses a I<version-flexible> method which will
+negotiate the highest mutually supported protocol version.
 
 =item B<-bugs>
 
@@ -405,5 +410,9 @@ unknown cipher suites a client says it supports.
 =head1 SEE ALSO
 
 L<sess_id(1)|sess_id(1)>, L<s_client(1)|s_client(1)>, L<ciphers(1)|ciphers(1)>
+
+=head1 HISTORY
+
+The -no_alt_chains options was first added to OpenSSL 1.0.2b.
 
 =cut
